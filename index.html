@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Simulador ECG - 12 Derivaciones</title>
+    <title>Simulador ECG Avanzado - 12 Derivaciones</title>
     <style>
         :root {
-            --bg-color: #0d0d12;
-            --panel-bg: #161622;
-            --ecg-color: #00ff66;
-            --text-color: #e0e0e0;
-            --border-color: #2b2b3d;
-            --grid-major: rgba(0, 255, 102, 0.12);
-            --grid-minor: rgba(0, 255, 102, 0.04);
+            --bg-color: #040406;
+            --panel-bg: #0c0c14;
+            --color-limb: #00ff66;   
+            --color-prec: #ff9900;   
+            --text-color: #f0f0f5;
+            --border-color: #33334d; /* Bordes más notables y marcados */
+            --grid-major: rgba(255, 255, 255, 0.1);
+            --grid-minor: rgba(255, 255, 255, 0.03);
+            --zoom-grid-maj: rgba(255, 0, 0, 0.25);
+            --zoom-grid-min: rgba(255, 0, 0, 0.08);
         }
 
         body, html {
@@ -22,35 +25,36 @@
             display: flex; flex-direction: column;
         }
 
-        /* Cabecera Clínica */
+        /* Cabecera con datos del paciente más grandes */
         .header {
-            display: flex; justify-content: space-between; padding: 6px 12px;
-            background-color: var(--panel-bg); border-bottom: 1px solid var(--border-color);
-            font-size: 0.75rem; align-items: center; flex-shrink: 0;
+            display: flex; justify-content: space-between; padding: 8px 16px;
+            background-color: var(--panel-bg); border-bottom: 2px solid var(--border-color);
+            font-size: 0.95rem; align-items: center; flex-shrink: 0;
         }
-        .patient-info span { font-weight: bold; color: #00aeff; cursor: pointer; text-decoration: underline; }
+        .patient-info span { font-weight: bold; color: #00d4ff; cursor: pointer; text-decoration: underline; font-size: 1.05rem; }
 
         .main-container {
-            display: flex; flex: 1; padding: 4px; gap: 4px; overflow: hidden; flex-direction: column;
+            display: flex; flex: 1; padding: 6px; gap: 6px; overflow: hidden; flex-direction: column;
         }
 
-        @media (min-width: 768px) { .main-container { flex-direction: row; } }
+        @media (min-width: 900px) { .main-container { flex-direction: row; } }
 
-        /* Contenedor de las 12 Derivaciones (Máxima Prelación) */
+        /* Contenedor de las 12 Derivaciones con divisiones marcadas */
         .graphics-column {
-            flex: 4; display: flex; flex-direction: column; gap: 2px; min-height: 0;
+            flex: 4.5; display: flex; flex-direction: column; gap: 4px; min-height: 0;
         }
         .graph-panel {
-            background-color: var(--panel-bg); border: 1px solid var(--border-color);
-            border-radius: 3px; display: flex; flex-direction: column; position: relative;
+            background-color: var(--panel-bg); border: 2px solid var(--border-color);
+            border-radius: 5px; display: flex; flex-direction: column; position: relative;
             flex: 1; overflow: hidden; min-height: 0;
         }
         .panel-label {
-            position: absolute; top: 2px; left: 4px; font-size: 0.65rem; font-weight: bold;
-            color: var(--ecg-color); background: rgba(22, 22, 34, 0.9); padding: 0 3px; border-radius: 2px; z-index: 10;
+            position: absolute; top: 3px; left: 6px; font-size: 0.85rem; font-weight: bold;
+            background: rgba(12, 12, 20, 0.95); padding: 1px 6px; border-radius: 3px; z-index: 10;
+            border: 1px solid var(--border-color);
         }
         .ecg-grid {
-            background-size: 25px 25px, 25px 25px, 5px 5px, 5px 5px;
+            background-size: 30px 30px, 30px 30px, 6px 6px, 6px 6px;
             background-image: 
                 linear-gradient(var(--grid-major) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
@@ -59,111 +63,191 @@
         }
         canvas { flex: 1; width: 100%; height: 100%; display: block; }
 
-        /* Panel Lateral / Inferior exclusivo para control y ritmo cardíaco */
+        /* Panel Lateral con tipografía ampliada */
         .vitals-column {
-            flex: 1.1; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+            flex: 1.6; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+            overflow-y: auto; max-height: 100%; padding-right: 2px;
         }
         .vital-box {
-            background-color: var(--panel-bg); border: 1px solid var(--border-color);
-            border-radius: 3px; padding: 4px; text-align: center;
+            background-color: var(--panel-bg); border: 2px solid var(--border-color);
+            border-radius: 5px; padding: 6px; text-align: center;
             display: flex; flex-direction: column; justify-content: center;
         }
-        .vital-title { font-size: 0.65rem; font-weight: bold; color: var(--ecg-color); }
-        .vital-value { font-size: 1.4rem; font-weight: bold; margin: 1px 0; color: var(--ecg-color); }
+        .vital-title { font-size: 0.75rem; font-weight: bold; color: var(--color-limb); letter-spacing: 0.5px; }
+        .vital-value { font-size: 1.5rem; font-weight: bold; margin: 2px 0; color: var(--color-limb); }
+
+        /* Ventana de Zoom */
+        .zoom-panel {
+            background-color: var(--panel-bg); border: 2px solid #ffcc00;
+            border-radius: 5px; padding: 6px; display: flex; flex-direction: column;
+            text-align: center; min-height: 110px; position: relative;
+        }
+        .zoom-title { font-size: 0.75rem; font-weight: bold; color: #ffcc00; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;}
+        .zoom-canvas-container { 
+            flex: 1; position: relative; width: 100%; height: 75px; background: #030305; border-radius: 3px; overflow: hidden; 
+            background-size: 20px 20px, 20px 20px, 4px 4px, 4px 4px;
+            background-image: 
+                linear-gradient(var(--zoom-grid-maj) 1px, transparent 1px),
+                linear-gradient(90deg, var(--zoom-grid-maj) 1px, transparent 1px),
+                linear-gradient(var(--zoom-grid-min) 1px, transparent 1px),
+                linear-gradient(90deg, var(--zoom-grid-min) 1px, transparent 1px);
+        }
 
         .diagnosis-box {
-            background-color: #122218; border: 1px solid #00ff66; border-radius: 3px;
-            padding: 5px; text-align: center; font-size: 0.7rem;
+            background-color: #0c1c12; border: 2px solid #00ff66; border-radius: 5px;
+            padding: 6px; text-align: center; font-size: 0.75rem;
         }
-        .diagnosis-box span { font-weight: bold; color: #00ff66; display: block; font-size: 0.75rem; }
+        .diagnosis-box span { font-weight: bold; color: #00ff66; display: block; font-size: 0.85rem; margin-top: 2px; }
 
+        /* Controles con textos amplios */
         .controls {
-            background-color: #20202e; padding: 6px; border-radius: 3px;
-            display: flex; flex-direction: column; gap: 4px; font-size: 0.7rem;
+            background-color: var(--panel-bg); padding: 8px; border-radius: 5px;
+            display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; border: 2px solid var(--border-color);
         }
         .control-row { display: flex; justify-content: space-between; align-items: center; }
-        input[type=range] { width: 60%; accent-color: #0078d7; }
-        
-        .btn-group { display: flex; gap: 3px; }
-        button {
-            flex: 1; padding: 4px; background-color: #0078d7; color: white; border: none;
-            border-radius: 2px; cursor: pointer; font-weight: bold; font-size: 0.65rem;
-        }
-        button:hover { background-color: #005a9e; }
+        select { background: #040406; color: #fff; border: 1px solid #555; padding: 4px; border-radius: 4px; font-size: 0.8rem; width: 55%; }
+        input[type=range] { width: 55%; accent-color: #00d4ff; cursor: pointer; height: 6px; }
 
-        /* Modal Paciente */
+        /* NUEVA CAJA DE CHAT VIRTUAL (AI) */
+        .chat-panel {
+            background-color: var(--panel-bg); border: 2px solid #00aeff;
+            border-radius: 5px; padding: 6px; display: flex; flex-direction: column;
+            flex: 1; min-height: 120px; font-size: 0.75rem;
+        }
+        .chat-title { font-weight: bold; color: #00aeff; margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .chat-messages {
+            flex: 1; background: #040406; border: 1px solid #222; border-radius: 3px;
+            padding: 5px; overflow-y: auto; max-height: 70px; font-size: 0.7rem; color: #ccc;
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .chat-input-row { display: flex; gap: 4px; margin-top: 5px; }
+        .chat-input-row input {
+            flex: 1; background: #040406; border: 1px solid #444; color: #fff; padding: 4px; border-radius: 3px; font-size: 0.7rem;
+        }
+        .chat-input-row button {
+            background: #00aeff; color: #000; font-weight: bold; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.7rem;
+        }
+
         #modalPatient {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center;
         }
         .modal-content {
-            background: var(--panel-bg); padding: 15px; border-radius: 6px; width: 85%; max-width: 320px;
-            display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-color); font-size: 0.8rem;
+            background: var(--panel-bg); padding: 20px; border-radius: 8px; width: 85%; max-width: 340px;
+            display: flex; flex-direction: column; gap: 10px; border: 2px solid var(--border-color); font-size: 0.9rem;
         }
-        .modal-content input { padding: 5px; background: #0d0d12; border: 1px solid #444; color: #fff; border-radius: 3px; }
+        .modal-content input { padding: 8px; background: #040406; border: 1px solid #555; color: #fff; border-radius: 4px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div class="patient-info">
-            Pac: <span id="lblNombre" onclick="openModal()">Juan Pérez</span> | 
+            Paciente: <span id="lblNombre" onclick="openModal()">Juan Pérez</span> | 
             Edad: <span id="lblEdad">45</span>a | 
             Peso: <span id="lblPeso">70</span>kg
         </div>
-        <div style="font-size: 0.65rem; color: #888;">ECG 12 Derivaciones</div>
+        <div style="font-size: 0.8rem; color: #aaa; font-weight: bold;">ECG 12 Derivaciones Avanzado</div>
     </div>
 
     <div class="main-container">
-        <!-- 12 Derivaciones Organizadas (Bipolares + Precordiales) -->
+        <!-- 12 Derivaciones con Marcos Notables -->
         <div class="graphics-column">
-            <!-- Fila Bipolares y Aumentadas -->
-            <div style="display: flex; flex: 1; gap: 2px; min-height:0;">
-                <div class="graph-panel ecg-grid"><div class="panel-label">I</div><canvas id="cI"></canvas></div>
-                <div class="graph-panel ecg-grid"><div class="panel-label">II</div><canvas id="cII"></canvas></div>
-                <div class="graph-panel ecg-grid"><div class="panel-label">III</div><canvas id="cIII"></canvas></div>
+            <div style="display: flex; flex: 1; gap: 4px; min-height:0;">
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-limb)">I</div><canvas id="cI"></canvas></div>
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-limb)">II</div><canvas id="cII"></canvas></div>
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-limb)">III</div><canvas id="cIII"></canvas></div>
             </div>
-            <div style="display: flex; flex: 1; gap: 2px; min-height:0;">
-                <div class="graph-panel ecg-grid"><div class="panel-label">aVR</div><canvas id="caVR"></canvas></div>
-                <div class="graph-panel ecg-grid"><div class="panel-label">aVL</div><canvas id="caVL"></canvas></div>
-                <div class="graph-panel ecg-grid"><div class="panel-label">aVF</div><canvas id="caVF"></canvas></div>
+            <div style="display: flex; flex: 1; gap: 4px; min-height:0;">
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-limb)">aVR</div><canvas id="caVR"></canvas></div>
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-limb)">aVL</div><canvas id="caVL"></canvas></div>
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-limb)">aVF</div><canvas id="caVF"></canvas></div>
             </div>
-            <!-- Fila Precordiales V1 a V6 -->
-            <div style="display: flex; flex: 1; gap: 2px; min-height:0;">
-                <div class="graph-panel ecg-grid"><div class="panel-label">V1</div><canvas id="cV1"></canvas></div>
-                <div class="graph-panel ecg-grid"><div class="panel-label">V2</div><canvas id="cV2"></canvas></div>
-                <div class="graph-panel ecg-grid"><div class="panel-label">V3</div><canvas id="cV3"></canvas></div>
+            <div style="display: flex; flex: 1; gap: 4px; min-height:0;">
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-prec)">V1</div><canvas id="cV1"></canvas></div>
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-prec)">V2</div><canvas id="cV2"></canvas></div>
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-prec)">V3</div><canvas id="cV3"></canvas></div>
             </div>
-            <div style="display: flex; flex: 1; gap: 2px; min-height:0;">
-                <div class="graph-panel ecg-grid"><div class="panel-label">V4</div><canvas id="cV4"></canvas></div>
-                <div class="graph-panel ecg-grid"><div class="panel-label">V5</div><canvas id="cV5"></canvas></div>
-                <div class="graph-panel ecg-grid"><div class="panel-label">V6</div><canvas id="cV6"></canvas></div>
+            <div style="display: flex; flex: 1; gap: 4px; min-height:0;">
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-prec)">V4</div><canvas id="cV4"></canvas></div>
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-prec)">V5</div><canvas id="cV5"></canvas></div>
+                <div class="graph-panel ecg-grid"><div class="panel-label" style="color:var(--color-prec)">V6</div><canvas id="cV6"></canvas></div>
             </div>
         </div>
 
-        <!-- Panel de Control y Estado -->
+        <!-- Panel Lateral Mejorado -->
         <div class="vitals-column">
             <div class="vital-box">
                 <div class="vital-title">FRECUENCIA CARDÍACA</div>
                 <div class="vital-value" id="bpmDisplay">75 BPM</div>
             </div>
-            
+
+            <!-- Ventana de Zoom -->
+            <div class="zoom-panel">
+                <div class="zoom-title">
+                    <span>ZOOM CICLO P-QRS-T</span>
+                    <span style="font-size:0.6rem; color:#aaa;">1mV / 200ms</span>
+                </div>
+                <div class="zoom-canvas-container">
+                    <canvas id="zoomCanvas"></canvas>
+                </div>
+            </div>
+
             <div class="diagnosis-box" id="diagnosisBox">
-                DIAGNÓSTICO AUTOMÁTICO:
+                ESTADO CLÍNICO:
                 <span id="diagnosisText">Ritmo Sinusal Normal</span>
             </div>
 
+            <!-- Controles con Textos Ampliados -->
             <div class="controls">
                 <div class="control-row">
-                    <span>BPM:</span>
-                    <input type="range" id="bpmSlider" min="30" max="180" value="75" oninput="updateBPMFromSlider(this.value)">
+                    <span style="font-weight: bold;">Ritmo (BPM):</span>
+                    <input type="range" id="bpmSlider" min="20" max="220" value="75" oninput="updateGlobal('bpm', this.value)">
                 </div>
-                <div class="btn-group">
-                    <button onclick="setPreset(45)" style="background-color: #009688;">Bradicardia</button>
-                    <button onclick="setPreset(75)" style="background-color: #0078d7;">Normal</button>
-                    <button onclick="setPreset(135)" style="background-color: #d78a00;">Taquicardia</button>
+                
+                <hr style="border:0; border-top:1px solid #444; margin:3px 0;">
+
+                <div class="control-row">
+                    <span style="font-weight: bold;">Seleccionar:</span>
+                    <select id="targetWave" onchange="updateSelectedWaveUI()">
+                        <option value="global">Sistema Global</option>
+                        <option value="P">Onda P (Atrio)</option>
+                        <option value="QRS">Complejo QRS</option>
+                        <option value="T">Onda T (Ventrículo)</option>
+                    </select>
                 </div>
-                <button onclick="openModal()" style="background-color: #444;">Datos Paciente</button>
+
+                <div class="control-row">
+                    <span id="labelAmp" style="font-weight: bold;">Amp:</span>
+                    <input type="range" id="ampSlider" min="0.0" max="5.0" step="0.1" value="1.0" oninput="updateTargetProp('amp', this.value)">
+                </div>
+
+                <div class="control-row">
+                    <span id="labelSpeed" style="font-weight: bold;">Velocidad:</span>
+                    <input type="range" id="speedSlider" min="0.1" max="5.0" step="0.1" value="1.0" oninput="updateTargetProp('speed', this.value)">
+                </div>
+
+                <div class="control-row">
+                    <span id="labelShift" style="font-weight: bold;">Desplazamiento:</span>
+                    <input type="range" id="shiftSlider" min="-25" max="25" step="1" value="0" oninput="updateTargetProp('shift', this.value)">
+                </div>
+
+                <button onclick="openModal()" style="background-color: #222; border: 1px solid #555; padding: 6px; color:#00d4ff; font-weight: bold; border-radius:4px; cursor:pointer; font-size:0.75rem; margin-top:2px;">Modificar Datos Paciente</button>
+            </div>
+
+            <!-- ESPACIO PARA EL CHAT VIRTUAL AI -->
+            <div class="chat-panel">
+                <div class="chat-title">
+                    <span>💬 Asistente IA (Clínico)</span>
+                    <span style="font-size: 0.6rem; color: #00ff66;">Online</span>
+                </div>
+                <div class="chat-messages" id="chatBox">
+                    <div style="color: #00d4ff;"><b>IA:</b> Hola, pregunta sobre el estado del paciente o trazo actual.</div>
+                </div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="Ej: ¿Qué ritmo tenemos?">
+                    <button onclick="sendChatMessage()">Enviar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -171,34 +255,44 @@
     <!-- Modal Paciente -->
     <div id="modalPatient">
         <div class="modal-content">
-            <h3 style="margin:0; color:#00aeff; font-size:0.9rem;">Editar Datos del Paciente</h3>
+            <h3 style="margin:0; color:#00d4ff; font-size:1rem;">Editar Datos del Paciente</h3>
             <label>Nombre:</label><input type="text" id="inputName" value="Juan Pérez">
             <label>Edad:</label><input type="number" id="inputAge" value="45">
             <label>Peso (Kg):</label><input type="number" id="inputWeight" value="70">
-            <button onclick="savePatientData()" style="background: #00aa00; margin-top:5px;">Guardar</button>
+            <button onclick="savePatientData()" style="background: #00d4ff; color:#000; font-weight:bold; margin-top:5px; border:none; padding:8px; border-radius:4px; cursor:pointer;">Guardar Cambios</button>
         </div>
     </div>
 
     <script>
-        // Mapeo completo de las 12 derivaciones con su respectiva morfología o factor de amplitud
         const channels = [
-            { id: 'cI', amp: 0.8, morph: 'normal' },
-            { id: 'cII', amp: 1.3, morph: 'tallR' },
-            { id: 'cIII', amp: 0.6, morph: 'inverted' },
-            { id: 'caVR', amp: 0.7, morph: 'inverted' },
-            { id: 'caVL', amp: 0.7, morph: 'normal' },
-            { id: 'caVF', amp: 1.0, morph: 'normal' },
-            { id: 'cV1', amp: 0.5, morph: 'deepS' },
-            { id: 'cV2', amp: 0.9, morph: 'transition' },
-            { id: 'cV3', amp: 1.1, morph: 'transition' },
-            { id: 'cV4', amp: 1.3, morph: 'tallR' },
-            { id: 'cV5', amp: 1.2, morph: 'tallR' },
-            { id: 'cV6', amp: 1.0, morph: 'normal' }
+            { id: 'cI', ampBase: 0.8, morph: 'normal', color: '#00ff66' },
+            { id: 'cII', ampBase: 1.3, morph: 'tallR', color: '#00ff66' },
+            { id: 'cIII', ampBase: 0.6, morph: 'inverted', color: '#00ff66' },
+            { id: 'caVR', ampBase: 0.7, morph: 'inverted', color: '#00ff66' },
+            { id: 'caVL', ampBase: 0.7, morph: 'normal', color: '#00ff66' },
+            { id: 'caVF', ampBase: 1.0, morph: 'normal', color: '#00ff66' },
+            { id: 'cV1', ampBase: 0.5, morph: 'deepS', color: '#ff9900' },
+            { id: 'cV2', ampBase: 0.9, morph: 'transition', color: '#ff9900' },
+            { id: 'cV3', ampBase: 1.1, morph: 'transition', color: '#ff9900' },
+            { id: 'cV4', ampBase: 1.3, morph: 'tallR', color: '#ff9900' },
+            { id: 'cV5', ampBase: 1.2, morph: 'tallR', color: '#ff9900' },
+            { id: 'cV6', ampBase: 1.0, morph: 'normal', color: '#ff9900' }
         ];
 
         let canvasObjects = [];
-        let baseBpm = 75;
-        const speed = 2.5;
+        let zoomCtx, zoomCanvas;
+        
+        let simConfig = {
+            baseBpm: 75,
+            sweepSpeed: 2.5,
+            waves: {
+                global: { amp: 1.0, speed: 1.0, shift: 0 },
+                P:      { amp: 1.0, speed: 1.0, shift: 0 },
+                QRS:    { amp: 1.0, speed: 1.0, shift: 0 },
+                T:      { amp: 1.0, speed: 1.0, shift: 0 }
+            }
+        };
+
         const eraseWidth = 20;
         let time = 0;
 
@@ -209,49 +303,55 @@
                 canvas.width = canvas.parentElement.clientWidth;
                 canvas.height = canvas.parentElement.clientHeight;
                 return {
-                    ctx: ctx,
-                    canvas: canvas,
-                    x: 0,
-                    lastY: canvas.height / 2,
-                    amp: ch.amp,
-                    morph: ch.morph,
-                    width: canvas.width,
-                    height: canvas.height
+                    ctx: ctx, x: 0, lastY: canvas.height / 2,
+                    ampBase: ch.ampBase, morph: ch.morph, color: ch.color,
+                    width: canvas.width, height: canvas.height
                 };
             });
+
+            zoomCanvas = document.getElementById('zoomCanvas');
+            zoomCtx = zoomCanvas.getContext('2d');
+            zoomCanvas.width = zoomCanvas.parentElement.clientWidth;
+            zoomCanvas.height = zoomCanvas.parentElement.clientHeight;
         }
 
         window.addEventListener('resize', initCanvases);
         initCanvases();
 
-        function getECGValue(t, morph, modifier) {
+        function getECGValue(t, morph, baseAmp) {
             const cycle = t % 100;
             let val = 0;
-            let invert = 1;
+            let invert = (morph === 'inverted') ? -1 : 1;
 
-            if (morph === 'inverted') invert = -1;
+            let pCenter = 15 + simConfig.waves.P.shift;
+            let qrsCenter = 37 + simConfig.waves.QRS.shift;
+            let tCenter = 70 + simConfig.waves.T.shift;
 
-            // Onda P
-            if (cycle > 10 && cycle < 20) val = Math.sin((cycle - 10) * Math.PI / 10) * 0.15 * invert;
-            // Onda Q
-            else if (cycle > 30 && cycle < 35) val = -Math.sin((cycle - 30) * Math.PI / 5) * 0.2;
-            // Onda R
-            else if (cycle >= 35 && cycle < 40) {
-                let rHeight = 1.5;
-                if (morph === 'deepS') rHeight = 0.5;
-                if (morph === 'transition') rHeight = 1.0;
-                val = Math.sin((cycle - 35) * Math.PI / 5) * rHeight * invert;
+            let pHalfWidth = 5 * simConfig.waves.P.speed;
+            let qrsHalfWidth = 7.5 * simConfig.waves.QRS.speed;
+            let tHalfWidth = 10 * simConfig.waves.T.speed;
+
+            if (cycle >= (pCenter - pHalfWidth) && cycle <= (pCenter + pHalfWidth)) {
+                let prog = (cycle - (pCenter - pHalfWidth)) / (2 * pHalfWidth);
+                val = Math.sin(prog * Math.PI) * 0.15 * invert * simConfig.waves.P.amp;
+            } else if (cycle >= (qrsCenter - qrsHalfWidth) && cycle <= (qrsCenter + qrsHalfWidth)) {
+                let prog = (cycle - (qrsCenter - qrsHalfWidth)) / (2 * qrsHalfWidth);
+                if (prog < 0.25) {
+                    val = -Math.sin(prog * 4 * Math.PI) * 0.2;
+                } else if (prog >= 0.25 && prog < 0.75) {
+                    let rHeight = (morph === 'deepS') ? 0.5 : (morph === 'transition') ? 1.0 : 1.5;
+                    val = Math.sin((prog - 0.25) * 2 * Math.PI) * rHeight * invert;
+                } else {
+                    let sDepth = (morph === 'deepS') ? 1.2 : 0.4;
+                    val = -Math.sin((prog - 0.75) * 4 * Math.PI) * sDepth;
+                }
+                val *= simConfig.waves.QRS.amp;
+            } else if (cycle >= (tCenter - tHalfWidth) && cycle <= (tCenter + tHalfWidth)) {
+                let prog = (cycle - (tCenter - tHalfWidth)) / (2 * tHalfWidth);
+                val = Math.sin(prog * Math.PI) * 0.3 * simConfig.waves.T.amp;
             }
-            // Onda S
-            else if (cycle >= 40 && cycle < 45) {
-                let sDepth = 0.4;
-                if (morph === 'deepS') sDepth = 1.2; // S profunda en V1
-                val = -Math.sin((cycle - 40) * Math.PI / 5) * sDepth;
-            }
-            // Onda T
-            else if (cycle > 60 && cycle < 80) val = Math.sin((cycle - 60) * Math.PI / 20) * 0.3;
 
-            return (val * modifier) + (Math.random() - 0.5) * 0.02;
+            return (val * baseAmp * simConfig.waves.global.amp) + (Math.random() - 0.5) * 0.02;
         }
 
         function updateClinicalStatus(bpm) {
@@ -259,30 +359,38 @@
             const boxEl = document.getElementById('diagnosisBox');
             if (bpm < 60) {
                 textEl.innerText = "Bradicardia Sinusal";
-                boxEl.style.borderColor = "#00d7bd";
-                boxEl.style.backgroundColor = "#002222";
+                boxEl.style.borderColor = "#00d7bd"; boxEl.style.backgroundColor = "#002222";
             } else if (bpm > 105) {
                 textEl.innerText = "Taquicardia Sinusal";
-                boxEl.style.borderColor = "#ffcc00";
-                boxEl.style.backgroundColor = "#222200";
+                boxEl.style.borderColor = "#ffcc00"; boxEl.style.backgroundColor = "#222200";
             } else {
                 textEl.innerText = "Ritmo Sinusal Normal";
-                boxEl.style.borderColor = "#00ff66";
-                boxEl.style.backgroundColor = "#122218";
+                boxEl.style.borderColor = "#00ff66"; boxEl.style.backgroundColor = "#0c1c12";
             }
         }
 
-        function setPreset(bpm) {
-            baseBpm = bpm;
-            document.getElementById('bpmSlider').value = bpm;
-            document.getElementById('bpmDisplay').innerText = bpm + " BPM";
-            updateClinicalStatus(bpm);
+        function updateGlobal(param, val) {
+            if (param === 'bpm') {
+                simConfig.baseBpm = parseInt(val);
+                document.getElementById('bpmDisplay').innerText = simConfig.baseBpm + " BPM";
+                updateClinicalStatus(simConfig.baseBpm);
+            }
         }
 
-        function updateBPMFromSlider(val) {
-            baseBpm = parseInt(val);
-            document.getElementById('bpmDisplay').innerText = baseBpm + " BPM";
-            updateClinicalStatus(baseBpm);
+        function updateSelectedWaveUI() {
+            const target = document.getElementById('targetWave').value;
+            document.getElementById('ampSlider').value = simConfig.waves[target].amp;
+            document.getElementById('speedSlider').value = simConfig.waves[target].speed;
+            document.getElementById('shiftSlider').value = simConfig.waves[target].shift;
+            
+            document.getElementById('labelAmp').innerText = target === 'global' ? 'Amp. Global:' : `Amp. Onda ${target}:`;
+            document.getElementById('labelSpeed').innerText = target === 'global' ? 'Vel. Global:' : `Vel. Onda ${target}:`;
+            document.getElementById('labelShift').innerText = target === 'global' ? 'Desplazamiento:' : `Despl. Onda ${target}:`;
+        }
+
+        function updateTargetProp(prop, val) {
+            const target = document.getElementById('targetWave').value;
+            simConfig.waves[target][prop] = parseFloat(val);
         }
 
         function openModal() { document.getElementById('modalPatient').style.display = 'flex'; }
@@ -293,30 +401,87 @@
             document.getElementById('modalPatient').style.display = 'none';
         }
 
+        // Simulación sencilla de respuesta del Chat IA
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const chatBox = document.getElementById('chatBox');
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Mensaje del usuario
+            chatBox.innerHTML += `<div><b>Tú:</b> ${text}</div>`;
+            
+            // Respuesta simulada de la IA basada en el estado actual
+            setTimeout(() => {
+                let reply = "Entendido. Analizando los parámetros actuales del monitor.";
+                const lower = text.toLowerCase();
+                const name = document.getElementById('lblNombre').innerText;
+                const bpm = simConfig.baseBpm;
+
+                if (lower.includes('paciente') || lower.includes('quien')) {
+                    reply = `El paciente actual es ${name}, con ${document.getElementById('lblEdad').innerText} años.`;
+                } else if (lower.includes('ritmo') || lower.includes('estado') || lower.includes('bpm')) {
+                    reply = `La frecuencia actual es de ${bpm} BPM (${document.getElementById('diagnosisText').innerText}).`;
+                } else {
+                    reply = `Registros de 12 derivaciones activos para ${name}. Todo bajo control analítico.`;
+                }
+
+                chatBox.innerHTML += `<div style="color: #00ff66;"><b>IA:</b> ${reply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 400);
+
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function drawZoomWindow() {
+            zoomCtx.clearRect(0, 0, zoomCanvas.width, zoomCanvas.height);
+            zoomCtx.beginPath();
+            
+            const w = zoomCanvas.width;
+            const h = zoomCanvas.height;
+            const centerY = h / 2;
+            const stepW = w / 100;
+
+            for (let i = 0; i <= 100; i++) {
+                const val = getECGValue(i, 'normal', 1.2);
+                const x = i * stepW;
+                const y = centerY - (val * (h / 3));
+                if (i === 0) zoomCtx.moveTo(x, y);
+                else zoomCtx.lineTo(x, y);
+            }
+
+            zoomCtx.strokeStyle = '#ffcc00';
+            zoomCtx.lineWidth = 2;
+            zoomCtx.stroke();
+        }
+
         function drawLoop() {
             canvasObjects.forEach(ch => {
                 const centerY = ch.height / 2;
                 const amplitude = ch.height / 2.8;
                 
-                const signal = getECGValue(time, ch.morph, ch.amp);
+                const signal = getECGValue(time, ch.morph, ch.ampBase);
                 const y = centerY - (signal * amplitude);
 
                 ch.ctx.beginPath();
-                ch.ctx.moveTo(ch.x - speed, ch.lastY);
+                ch.ctx.moveTo(ch.x - simConfig.sweepSpeed, ch.lastY);
                 ch.ctx.lineTo(ch.x, y);
-                ch.ctx.strokeStyle = '#00ff66';
-                ch.ctx.lineWidth = 1.2;
+                ch.ctx.strokeStyle = ch.color;
+                ch.ctx.lineWidth = 1.3;
                 ch.ctx.stroke();
 
                 ch.ctx.clearRect(ch.x + 1, 0, eraseWidth, ch.height);
 
                 ch.lastY = y;
-                ch.x += speed;
+                ch.x += simConfig.sweepSpeed;
 
                 if (ch.x > ch.width) ch.x = 0;
             });
 
-            time += (baseBpm / 60) * 0.8;
+            drawZoomWindow();
+
+            time += (simConfig.baseBpm / 60) * 0.8;
             requestAnimationFrame(drawLoop);
         }
 
